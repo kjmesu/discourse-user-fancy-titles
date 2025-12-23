@@ -1,0 +1,8 @@
+en:
+  js:
+    user_fancy_titles:
+      title_css_label: "Title CSS"
+      title_css_placeholder: "color: red; font-weight: bold;"
+      no_custom_css: "(none)"
+      css_was_sanitized: "Some CSS properties were removed for security reasons."
+      allowed_properties: "Allowed properties: color, font-weight, font-style, text-decoration, text-transform, font-size"

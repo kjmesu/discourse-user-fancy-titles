@@ -2,51 +2,21 @@ import { apiInitializer } from "discourse/lib/api";
 import { htmlSafe } from "@ember/template";
 
 export default apiInitializer("1.14.0", (api) => {
-  api.registerValueTransformer("poster-name-user-title", ({ value }) => {
+  // Apply custom CSS to user titles
+  api.registerValueTransformer("poster-name-user-title", ({ value, context }) => {
     if (!value) {
       return value;
     }
 
-    const sanitized = sanitizeUserTitle(value);
-    return htmlSafe(sanitized);
-  });
-});
-
-function sanitizeUserTitle(html) {
-  const allowedTags = ["span", "strong", "em", "i", "b"];
-  const allowedStyles = ["color", "font-weight", "font-style"];
-
-  const temp = document.createElement("div");
-  temp.innerHTML = html;
-
-  const elements = temp.querySelectorAll("*");
-  elements.forEach((el) => {
-    const tagName = el.tagName.toLowerCase();
-
-    if (!allowedTags.includes(tagName)) {
-      el.replaceWith(...el.childNodes);
-      return;
+    // Get the user object from context
+    const user = context?.user;
+    if (!user?.title_css) {
+      // No custom CSS, return plain title
+      return value;
     }
 
-    Array.from(el.attributes).forEach((attr) => {
-      if (attr.name === "style" && tagName === "span") {
-        const sanitizedStyle = sanitizeStyle(attr.value, allowedStyles);
-        el.setAttribute("style", sanitizedStyle);
-      } else {
-        el.removeAttribute(attr.name);
-      }
-    });
+    // Apply inline CSS styling
+    // The value is already the title text, we wrap it with styling
+    return htmlSafe(`<span style="${user.title_css}">${value}</span>`);
   });
-
-  return temp.innerHTML;
-}
-
-function sanitizeStyle(styleString, allowedProps) {
-  return styleString
-    .split(";")
-    .filter((rule) => {
-      const prop = rule.split(":")[0]?.trim();
-      return allowedProps.includes(prop);
-    })
-    .join(";");
-}
+});

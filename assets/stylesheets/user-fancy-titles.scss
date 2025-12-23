@@ -1,0 +1,27 @@
+.title-css-field {
+  .title-css-input {
+    width: 100%;
+    font-family: monospace;
+    font-size: 0.9em;
+  }
+
+  code {
+    background-color: var(--primary-very-low);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.9em;
+  }
+
+  .empty-value {
+    color: var(--primary-medium);
+    font-style: italic;
+  }
+}
+
+.title-css-help {
+  .help {
+    font-size: 0.85em;
+    color: var(--primary-medium);
+    margin: 0;
+  }
+}
