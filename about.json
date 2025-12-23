@@ -1,0 +1,8 @@
+{
+  "name": "discourse-user-fancy-titles",
+  "about_url": "https://github.com/gafshub/discourse-user-fancy-titles",
+  "license_url": "https://github.com/gafshub/discourse-user-fancy-titles/blob/main/LICENSE",
+  "authors": "GAFSHUB",
+  "version": "0.1.0",
+  "transpile_js": true
+}
