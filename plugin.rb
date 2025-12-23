@@ -6,8 +6,6 @@
 # authors: Discourse
 # url: https://github.com/discourse/discourse-user-fancy-titles
 
-enabled_site_setting :user_fancy_titles_enabled
-
 module ::DiscourseUserFancyTitles
   PLUGIN_NAME = "discourse-user-fancy-titles"
   TITLE_CSS_FIELD = "title_css"
