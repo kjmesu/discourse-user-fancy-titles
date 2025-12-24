@@ -131,21 +131,36 @@ after_initialize do
     css_value = params[:title_css].to_s.strip
     original_value = css_value.dup
 
+    Rails.logger.warn("=== Controller Debug ===")
+    Rails.logger.warn("User ID: #{user.id}")
+    Rails.logger.warn("Input CSS: #{css_value.inspect}")
+
     sanitized_css = DiscourseUserFancyTitles.sanitize_css(css_value)
+    Rails.logger.warn("Sanitized CSS: #{sanitized_css.inspect}")
+
+    Rails.logger.warn("Custom fields before: #{user.custom_fields.inspect}")
 
     if sanitized_css.present?
       user.custom_fields[DiscourseUserFancyTitles::TITLE_CSS_FIELD] = sanitized_css
+      Rails.logger.warn("Set custom field to: #{sanitized_css.inspect}")
     else
       user.custom_fields.delete(DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+      Rails.logger.warn("Deleted custom field")
     end
 
-    user.save_custom_fields(true)
+    Rails.logger.warn("Custom fields after assignment: #{user.custom_fields.inspect}")
 
-    # Reload to get the saved value
+    save_result = user.save_custom_fields(true)
+    Rails.logger.warn("Save result: #{save_result.inspect}")
+
     user.reload
+    Rails.logger.warn("Custom fields after reload: #{user.custom_fields.inspect}")
+
+    actual_saved = user.custom_fields[DiscourseUserFancyTitles::TITLE_CSS_FIELD]
+    Rails.logger.warn("Actual saved value: #{actual_saved.inspect}")
 
     render json: success_json.merge(
-             title_css: sanitized_css.presence || "",
+             title_css: actual_saved.presence || "",
              sanitized: sanitized_css != original_value,
            )
   end
