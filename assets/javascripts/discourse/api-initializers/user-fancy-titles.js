@@ -1,6 +1,8 @@
 import { apiInitializer } from "discourse/lib/api";
 import { slugify } from "discourse/lib/utilities";
 
+const MAX_CACHE_SIZE = 1000;
+
 export default apiInitializer("1.14.0", (api) => {
   let styleElement = null;
   const titleStylesCache = new Map();
@@ -18,10 +20,13 @@ export default apiInitializer("1.14.0", (api) => {
 
       if (titleCss && userTitle) {
         const className = slugify(userTitle);
-        const cacheKey = className;
 
-        if (!titleStylesCache.has(cacheKey)) {
-          titleStylesCache.set(cacheKey, titleCss);
+        if (!titleStylesCache.has(className)) {
+          if (titleStylesCache.size >= MAX_CACHE_SIZE) {
+            titleStylesCache.clear();
+            hasChanges = true;
+          }
+          titleStylesCache.set(className, titleCss);
           hasChanges = true;
         }
       }
@@ -48,10 +53,9 @@ export default apiInitializer("1.14.0", (api) => {
     styleElement.textContent = cssRules.join("\n");
   }
 
-  api.onPageChange(() => {
-    const topicController = api.container.lookup("controller:topic");
-    if (topicController?.model?.postStream?.posts) {
-      updateTitleStyles(topicController.model.postStream.posts);
+  api.onAppEvent("page:topic-loaded", (topic) => {
+    if (topic?.postStream?.posts) {
+      updateTitleStyles(topic.postStream.posts);
     }
   });
 });
