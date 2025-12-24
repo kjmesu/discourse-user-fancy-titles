@@ -18,8 +18,9 @@ export default class TitleCssEditor extends Component {
 
   constructor() {
     super(...arguments);
-    const customFields = this.args.outletArgs?.user?.custom_fields;
-    this.savedValue = customFields?.title_css || "";
+    // Try top-level title_css first (from serializer), then fall back to custom_fields
+    const user = this.args.outletArgs?.user;
+    this.savedValue = user?.title_css || user?.custom_fields?.title_css || "";
     this.cssValue = this.savedValue;
   }
 
@@ -34,8 +35,8 @@ export default class TitleCssEditor extends Component {
   @action
   startEdit(event) {
     event?.preventDefault();
-    const customFields = this.args.outletArgs?.user?.custom_fields;
-    this.cssValue = customFields?.title_css || "";
+    const user = this.args.outletArgs?.user;
+    this.cssValue = user?.title_css || user?.custom_fields?.title_css || "";
     this.editing = true;
   }
 
@@ -60,7 +61,9 @@ export default class TitleCssEditor extends Component {
         data: { title_css: this.cssValue },
       });
 
-      // Update the model
+      // Update the model in both locations for consistency
+      this.args.outletArgs.user.title_css = result.title_css || "";
+
       if (!this.args.outletArgs.user.custom_fields) {
         this.args.outletArgs.user.custom_fields = {};
       }
