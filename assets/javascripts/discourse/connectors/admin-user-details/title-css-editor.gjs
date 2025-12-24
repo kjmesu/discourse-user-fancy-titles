@@ -16,10 +16,13 @@ export default class TitleCssEditor extends Component {
   @tracked saving = false;
   @tracked savedValue = "";
 
+  get user() {
+    return this.args.outletArgs?.model || this.args.outletArgs?.user;
+  }
+
   constructor() {
     super(...arguments);
-    const user = this.args.outletArgs?.user;
-    this.savedValue = user?.title_css || user?.custom_fields?.title_css || "";
+    this.savedValue = this.user?.title_css || this.user?.custom_fields?.title_css || "";
     this.cssValue = this.savedValue;
   }
 
@@ -34,8 +37,7 @@ export default class TitleCssEditor extends Component {
   @action
   startEdit(event) {
     event?.preventDefault();
-    const user = this.args.outletArgs?.user;
-    this.cssValue = user?.title_css || user?.custom_fields?.title_css || "";
+    this.cssValue = this.user?.title_css || this.user?.custom_fields?.title_css || "";
     this.editing = true;
   }
 
@@ -54,18 +56,18 @@ export default class TitleCssEditor extends Component {
   async save() {
     this.saving = true;
     try {
-      const userId = this.args.outletArgs.user.id;
+      const userId = this.user.id;
       const result = await ajax(`/admin/users/${userId}/title-css`, {
         type: "PUT",
         data: { title_css: this.cssValue },
       });
 
-      this.args.outletArgs.user.title_css = result.title_css || "";
+      this.user.title_css = result.title_css || "";
 
-      if (!this.args.outletArgs.user.custom_fields) {
-        this.args.outletArgs.user.custom_fields = {};
+      if (!this.user.custom_fields) {
+        this.user.custom_fields = {};
       }
-      this.args.outletArgs.user.custom_fields.title_css = result.title_css || "";
+      this.user.custom_fields.title_css = result.title_css || "";
 
       this.savedValue = result.title_css || "";
 
