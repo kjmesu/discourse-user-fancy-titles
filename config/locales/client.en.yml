@@ -5,4 +5,4 @@ en:
       title_css_placeholder: "color: red; font-weight: bold;"
       no_custom_css: "(none)"
       css_was_sanitized: "Some CSS properties were removed for security reasons."
-      allowed_properties: "Allowed properties: color, font-weight, font-style, text-decoration, text-transform, font-size"
+      allowed_properties: "Allowed properties: color, font-weight, font-style, text-decoration, text-transform, text-shadow, font-size"
