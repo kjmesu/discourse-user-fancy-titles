@@ -70,23 +70,21 @@ after_initialize do
     staff_only: true
   )
 
+  # Register custom field to be preloaded
+  register_user_custom_field_type(DiscourseUserFancyTitles::TITLE_CSS_FIELD, :text)
+
+  # Preload custom field for serializers
+  preload_custom_fields(User, [DiscourseUserFancyTitles::TITLE_CSS_FIELD]) if User.respond_to?(:preload_custom_fields)
+
   # Expose custom field to serializers
   # BasicUserSerializer is the base for all user serializations
   add_to_serializer(:basic_user, :title_css) do
-    object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+    object.custom_fields[DiscourseUserFancyTitles::TITLE_CSS_FIELD]
   end
 
   # Include condition: only include if the field exists
   add_to_serializer(:basic_user, :include_title_css?) do
-    object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD).present?
-  end
-
-  # Sanitize CSS on save
-  on(:before_save) do
-    if self.class.name == "UserCustomField" &&
-         self.name == DiscourseUserFancyTitles::TITLE_CSS_FIELD
-      self.value = DiscourseUserFancyTitles.sanitize_css(self.value)
-    end
+    object.custom_fields[DiscourseUserFancyTitles::TITLE_CSS_FIELD].present?
   end
 
   # Add custom route for updating title CSS
