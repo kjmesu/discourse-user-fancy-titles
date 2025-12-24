@@ -73,8 +73,9 @@ after_initialize do
   # Register custom field to be preloaded
   register_user_custom_field_type(DiscourseUserFancyTitles::TITLE_CSS_FIELD, :text)
 
-  # Preload custom field for serializers
-  preload_custom_fields(User, [DiscourseUserFancyTitles::TITLE_CSS_FIELD]) if User.respond_to?(:preload_custom_fields)
+  # Whitelist custom field for public access
+  allow_staff_user_custom_field(DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+  allow_public_user_custom_field(DiscourseUserFancyTitles::TITLE_CSS_FIELD)
 
   # Expose custom field to serializers
   # BasicUserSerializer is the base for all user serializations
