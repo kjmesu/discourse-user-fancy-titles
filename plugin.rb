@@ -79,7 +79,16 @@ after_initialize do
   allow_staff_user_custom_field(DiscourseUserFancyTitles::TITLE_CSS_FIELD)
   allow_public_user_custom_field(DiscourseUserFancyTitles::TITLE_CSS_FIELD)
 
-  # Expose custom field to serializers
+  # Add title_css to PostSerializer (for post streams)
+  add_to_serializer(:post, :user_title_css) do
+    user_custom_fields_object[object.user_id]&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+  end
+
+  add_to_serializer(:post, :include_user_title_css?) do
+    user_title_css.present?
+  end
+
+  # Add title_css to BasicUserSerializer (for user cards, profiles, etc.)
   add_to_serializer(:basic_user, :title_css) do
     if object.is_a?(Hash)
       object.dig(:custom_fields, DiscourseUserFancyTitles::TITLE_CSS_FIELD) ||
@@ -90,13 +99,7 @@ after_initialize do
   end
 
   add_to_serializer(:basic_user, :include_title_css?) do
-    value = if object.is_a?(Hash)
-              object.dig(:custom_fields, DiscourseUserFancyTitles::TITLE_CSS_FIELD) ||
-                object.dig("custom_fields", DiscourseUserFancyTitles::TITLE_CSS_FIELD)
-            else
-              object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD)
-            end
-    value.present?
+    title_css.present?
   end
 
   # Also add to admin serializer
