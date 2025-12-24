@@ -12,22 +12,29 @@ export default class TitleCssEditor extends Component {
   @service currentUser;
   @service dialog;
   @tracked editing = false;
-  @tracked buffer = "";
+  @tracked cssValue = "";
   @tracked saving = false;
 
   constructor() {
     super(...arguments);
-    this.buffer = this.args.outletArgs.user.custom_fields?.title_css || "";
+    const customFields = this.args.outletArgs?.user?.custom_fields;
+    this.cssValue = customFields?.title_css || "";
   }
 
   get canEdit() {
     return this.currentUser?.staff;
   }
 
+  get displayValue() {
+    const customFields = this.args.outletArgs?.user?.custom_fields;
+    return customFields?.title_css || "";
+  }
+
   @action
   startEdit(event) {
     event?.preventDefault();
-    this.buffer = this.args.outletArgs.user.custom_fields?.title_css || "";
+    const customFields = this.args.outletArgs?.user?.custom_fields;
+    this.cssValue = customFields?.title_css || "";
     this.editing = true;
   }
 
@@ -35,36 +42,32 @@ export default class TitleCssEditor extends Component {
   cancelEdit(event) {
     event?.preventDefault();
     this.editing = false;
-    this.buffer = this.args.outletArgs.user.custom_fields?.title_css || "";
   }
 
   @action
-  updateBuffer(event) {
-    this.buffer = event.target.value;
+  updateValue(event) {
+    this.cssValue = event.target.value;
   }
 
   @action
   async save() {
     this.saving = true;
     try {
-      const result = await ajax(
-        `/admin/users/${this.args.outletArgs.user.id}/title-css`,
-        {
-          type: "PUT",
-          data: { title_css: this.buffer },
-        }
-      );
+      const userId = this.args.outletArgs.user.id;
+      const result = await ajax(`/admin/users/${userId}/title-css`, {
+        type: "PUT",
+        data: { title_css: this.cssValue },
+      });
 
-      // Update the model with sanitized value
+      // Update the model
       if (!this.args.outletArgs.user.custom_fields) {
         this.args.outletArgs.user.custom_fields = {};
       }
-      this.args.outletArgs.user.custom_fields.title_css = result.title_css;
+      this.args.outletArgs.user.custom_fields.title_css = result.title_css || "";
 
       this.editing = false;
 
       if (result.sanitized) {
-        // Notify user that CSS was sanitized
         this.dialog.alert(i18n("user_fancy_titles.css_was_sanitized"));
       }
     } catch (error) {
@@ -81,16 +84,16 @@ export default class TitleCssEditor extends Component {
         <div class="value">
           {{#if this.editing}}
             <textarea
-              value={{this.buffer}}
-              {{on "input" this.updateBuffer}}
+              value={{this.cssValue}}
+              {{on "input" this.updateValue}}
               rows="3"
               placeholder={{i18n "user_fancy_titles.title_css_placeholder"}}
               class="title-css-input"
             ></textarea>
           {{else}}
             <a href {{on "click" this.startEdit}} class="inline-editable-field">
-              {{#if @outletArgs.user.custom_fields.title_css}}
-                <code>{{@outletArgs.user.custom_fields.title_css}}</code>
+              {{#if this.displayValue}}
+                <code>{{this.displayValue}}</code>
               {{else}}
                 <span class="empty-value">{{i18n
                     "user_fancy_titles.no_custom_css"

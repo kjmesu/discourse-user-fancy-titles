@@ -42,14 +42,14 @@ module ::DiscourseUserFancyTitles
     result = css_string
       .split(";")
       .map(&:strip)
-      .select { |rule| rule.present? }
+      .reject(&:blank?)
       .filter_map do |rule|
         parts = rule.split(":", 2)
-        next unless parts.length == 2
+        next if parts.length != 2
 
         property = parts[0].strip
         value = parts[1].strip
-        next unless property.present? && value.present?
+        next if property.blank? || value.blank?
 
         # Only allow allowlisted properties
         next unless ALLOWED_CSS_PROPERTIES.include?(property.downcase)
@@ -63,38 +63,34 @@ module ::DiscourseUserFancyTitles
       end
       .join("; ")
 
-    result.present? ? result : ""
+    result.blank? ? "" : result
   end
 end
 
 require_relative "lib/discourse_user_fancy_titles/engine"
 
 after_initialize do
-  # Register custom field as staff-editable
+  # Register custom field
   register_editable_user_custom_field(
     DiscourseUserFancyTitles::TITLE_CSS_FIELD,
     staff_only: true
   )
 
-  # Register custom field to be preloaded
   register_user_custom_field_type(DiscourseUserFancyTitles::TITLE_CSS_FIELD, :text)
-
-  # Whitelist custom field for public access
   allow_staff_user_custom_field(DiscourseUserFancyTitles::TITLE_CSS_FIELD)
   allow_public_user_custom_field(DiscourseUserFancyTitles::TITLE_CSS_FIELD)
 
   # Expose custom field to serializers
-  # BasicUserSerializer is the base for all user serializations
   add_to_serializer(:basic_user, :title_css) do
-    object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+    object.custom_fields&.dig(DiscourseUserFancyTitles::TITLE_CSS_FIELD)
   end
 
-  # Include condition: only include if the field exists
   add_to_serializer(:basic_user, :include_title_css?) do
-    object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD).present?
+    value = object.custom_fields&.dig(DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+    value.present?
   end
 
-  # Add custom route for updating title CSS
+  # Add custom route
   Discourse::Application.routes.append do
     put "/admin/users/:user_id/title-css" => "admin/users#update_title_css"
   end
@@ -107,11 +103,10 @@ after_initialize do
     user = User.find(params[:user_id])
     guardian.ensure_can_edit!(user)
 
-    css_value = params[:title_css].to_s
-    Rails.logger.info("Title CSS input: #{css_value.inspect}")
+    css_value = params[:title_css].to_s.strip
+    original_value = css_value.dup
 
     sanitized_css = DiscourseUserFancyTitles.sanitize_css(css_value)
-    Rails.logger.info("Title CSS sanitized: #{sanitized_css.inspect}")
 
     if sanitized_css.present?
       user.custom_fields[DiscourseUserFancyTitles::TITLE_CSS_FIELD] = sanitized_css
@@ -121,19 +116,12 @@ after_initialize do
 
     user.save_custom_fields(true)
 
-    # Log staff action
-    StaffActionLogger.new(current_user).log_custom(
-      "update_user_title_css",
-      {
-        user_id: user.id,
-        username: user.username,
-        title_css: sanitized_css,
-      }
-    )
+    # Reload to get the saved value
+    user.reload
 
     render json: success_json.merge(
-             title_css: sanitized_css,
-             sanitized: sanitized_css != params[:title_css],
+             title_css: sanitized_css.presence || "",
+             sanitized: sanitized_css != original_value,
            )
   end
 end
