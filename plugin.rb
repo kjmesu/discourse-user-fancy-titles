@@ -33,36 +33,50 @@ module ::DiscourseUserFancyTitles
   def self.sanitize_css(css_string)
     return "" if css_string.blank?
 
+    Rails.logger.warn("=== CSS Sanitization Debug ===")
+    Rails.logger.warn("Input: #{css_string.inspect}")
+
     # Block dangerous patterns
     BLOCKED_PATTERNS.each do |pattern|
-      return "" if css_string =~ pattern
+      if css_string =~ pattern
+        Rails.logger.warn("Blocked by pattern: #{pattern}")
+        return ""
+      end
     end
 
     # Parse and filter CSS declarations
-    result = css_string
-      .split(";")
-      .map(&:strip)
-      .reject(&:blank?)
-      .filter_map do |rule|
-        parts = rule.split(":", 2)
-        next if parts.length != 2
+    parts_array = css_string.split(";").map(&:strip).reject(&:blank?)
+    Rails.logger.warn("After split by semicolon: #{parts_array.inspect}")
 
-        property = parts[0].strip
-        value = parts[1].strip
-        next if property.blank? || value.blank?
+    result = parts_array.filter_map do |rule|
+      parts = rule.split(":", 2)
+      Rails.logger.warn("Rule: #{rule.inspect}, Parts: #{parts.inspect}")
 
-        # Only allow allowlisted properties
-        next unless ALLOWED_CSS_PROPERTIES.include?(property.downcase)
+      next if parts.length != 2
 
-        # Additional validation for font-size (must have valid unit)
-        if property.downcase == "font-size"
-          next unless value =~ /^\d+(\.\d+)?(px|em|rem|%)$/i
-        end
+      property = parts[0].strip
+      value = parts[1].strip
+      Rails.logger.warn("Property: #{property.inspect}, Value: #{value.inspect}")
 
-        "#{property}: #{value}"
+      next if property.blank? || value.blank?
+
+      # Only allow allowlisted properties
+      unless ALLOWED_CSS_PROPERTIES.include?(property.downcase)
+        Rails.logger.warn("Property #{property} not in allowlist: #{ALLOWED_CSS_PROPERTIES.inspect}")
+        next
       end
-      .join("; ")
 
+      # Additional validation for font-size (must have valid unit)
+      if property.downcase == "font-size"
+        next unless value =~ /^\d+(\.\d+)?(px|em|rem|%)$/i
+      end
+
+      output = "#{property}: #{value}"
+      Rails.logger.warn("Accepted: #{output.inspect}")
+      output
+    end.join("; ")
+
+    Rails.logger.warn("Final result: #{result.inspect}")
     result.blank? ? "" : result
   end
 end
@@ -82,11 +96,22 @@ after_initialize do
 
   # Expose custom field to serializers
   add_to_serializer(:basic_user, :title_css) do
-    object.custom_fields&.dig(DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+    # Handle both User objects and Hash representations
+    if object.is_a?(Hash)
+      object.dig(:custom_fields, DiscourseUserFancyTitles::TITLE_CSS_FIELD) ||
+        object.dig("custom_fields", DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+    else
+      object.custom_fields&.dig(DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+    end
   end
 
   add_to_serializer(:basic_user, :include_title_css?) do
-    value = object.custom_fields&.dig(DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+    value = if object.is_a?(Hash)
+              object.dig(:custom_fields, DiscourseUserFancyTitles::TITLE_CSS_FIELD) ||
+                object.dig("custom_fields", DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+            else
+              object.custom_fields&.dig(DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+            end
     value.present?
   end
 
