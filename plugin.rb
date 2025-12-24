@@ -81,11 +81,22 @@ after_initialize do
 
   # Expose custom field to serializers
   add_to_serializer(:basic_user, :title_css) do
-    object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+    if object.is_a?(Hash)
+      object.dig(:custom_fields, DiscourseUserFancyTitles::TITLE_CSS_FIELD) ||
+        object.dig("custom_fields", DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+    else
+      object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+    end
   end
 
   add_to_serializer(:basic_user, :include_title_css?) do
-    object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD).present?
+    value = if object.is_a?(Hash)
+              object.dig(:custom_fields, DiscourseUserFancyTitles::TITLE_CSS_FIELD) ||
+                object.dig("custom_fields", DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+            else
+              object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+            end
+    value.present?
   end
 
   # Also add to admin serializer
