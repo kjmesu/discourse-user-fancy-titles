@@ -39,13 +39,17 @@ module ::DiscourseUserFancyTitles
     end
 
     # Parse and filter CSS declarations
-    css_string
+    result = css_string
       .split(";")
       .map(&:strip)
       .select { |rule| rule.present? }
       .filter_map do |rule|
-        property, value = rule.split(":", 2).map(&:strip)
-        next unless property && value
+        parts = rule.split(":", 2)
+        next unless parts.length == 2
+
+        property = parts[0].strip
+        value = parts[1].strip
+        next unless property.present? && value.present?
 
         # Only allow allowlisted properties
         next unless ALLOWED_CSS_PROPERTIES.include?(property.downcase)
@@ -58,6 +62,8 @@ module ::DiscourseUserFancyTitles
         "#{property}: #{value}"
       end
       .join("; ")
+
+    result.present? ? result : ""
   end
 end
 
@@ -80,12 +86,12 @@ after_initialize do
   # Expose custom field to serializers
   # BasicUserSerializer is the base for all user serializations
   add_to_serializer(:basic_user, :title_css) do
-    object.custom_fields[DiscourseUserFancyTitles::TITLE_CSS_FIELD]
+    object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD)
   end
 
   # Include condition: only include if the field exists
   add_to_serializer(:basic_user, :include_title_css?) do
-    object.custom_fields[DiscourseUserFancyTitles::TITLE_CSS_FIELD].present?
+    object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD).present?
   end
 
   # Add custom route for updating title CSS
@@ -102,7 +108,10 @@ after_initialize do
     guardian.ensure_can_edit!(user)
 
     css_value = params[:title_css].to_s
+    Rails.logger.info("Title CSS input: #{css_value.inspect}")
+
     sanitized_css = DiscourseUserFancyTitles.sanitize_css(css_value)
+    Rails.logger.info("Title CSS sanitized: #{sanitized_css.inspect}")
 
     if sanitized_css.present?
       user.custom_fields[DiscourseUserFancyTitles::TITLE_CSS_FIELD] = sanitized_css
