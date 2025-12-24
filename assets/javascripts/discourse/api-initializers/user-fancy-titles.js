@@ -1,30 +1,37 @@
 import { apiInitializer } from "discourse/lib/api";
+import { slugify } from "discourse/lib/utilities";
 
 export default apiInitializer("1.14.0", (api) => {
   let styleElement = null;
-
-  function titleToClass(title) {
-    return title.replace(/\s+/g, "-").toLowerCase();
-  }
+  const titleStylesCache = new Map();
 
   function updateTitleStyles(posts) {
     if (!posts || posts.length === 0) {
       return;
     }
 
-    const cssRules = [];
+    let hasChanges = false;
 
     posts.forEach((post) => {
       const titleCss = post.user_title_css;
       const userTitle = post.user_title;
 
       if (titleCss && userTitle) {
-        const className = titleToClass(userTitle);
-        cssRules.push(`.user-title--${className} { ${titleCss} }`);
+        const className = slugify(userTitle);
+        const cacheKey = className;
+
+        if (!titleStylesCache.has(cacheKey)) {
+          titleStylesCache.set(cacheKey, titleCss);
+          hasChanges = true;
+        }
       }
     });
 
-    if (cssRules.length === 0) {
+    if (!hasChanges && styleElement) {
+      return;
+    }
+
+    if (titleStylesCache.size === 0) {
       return;
     }
 
@@ -33,6 +40,10 @@ export default apiInitializer("1.14.0", (api) => {
       styleElement.id = "discourse-user-fancy-titles-styles";
       document.head.appendChild(styleElement);
     }
+
+    const cssRules = Array.from(titleStylesCache.entries()).map(
+      ([className, css]) => `.user-title--${className} { ${css} }`
+    );
 
     styleElement.textContent = cssRules.join("\n");
   }
