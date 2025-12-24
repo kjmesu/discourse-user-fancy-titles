@@ -1,31 +1,24 @@
 import { apiInitializer } from "discourse/lib/api";
-import { htmlSafe } from "@ember/template";
 
 export default apiInitializer("1.14.0", (api) => {
-  // Apply custom CSS to user titles
-  api.registerValueTransformer("poster-name-user-title", ({ value, context }) => {
-    // Don't process if no value
-    if (!value) {
-      return value;
-    }
+  // Apply custom CSS to user titles via decorateCooked
+  api.decorateCooked(
+    ($elem, helper) => {
+      if (!helper) {
+        return;
+      }
 
-    // Get CSS from either post.user_title_css (post streams) or user.title_css (other contexts)
-    const titleCss = context?.post?.user_title_css || context?.user?.title_css;
+      const post = helper.getModel?.();
+      if (!post?.user_title_css) {
+        return;
+      }
 
-    // No CSS to apply
-    if (!titleCss) {
-      return value;
-    }
-
-    // Convert value to string (it might be an htmlSafe object)
-    const valueStr = typeof value === 'string' ? value : value.toString();
-
-    // Don't re-wrap if already wrapped
-    if (valueStr.includes('<span style=')) {
-      return value;
-    }
-
-    // Apply inline CSS styling
-    return htmlSafe(`<span style="${titleCss}">${valueStr}</span>`);
-  });
+      // Find the user title span and apply custom CSS
+      const titleSpan = $elem.find(".names .user-title");
+      if (titleSpan.length > 0) {
+        titleSpan.attr("style", post.user_title_css);
+      }
+    },
+    { id: "user-fancy-titles" }
+  );
 });
