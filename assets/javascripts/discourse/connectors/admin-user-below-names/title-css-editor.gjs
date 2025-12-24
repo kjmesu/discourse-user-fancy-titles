@@ -14,11 +14,13 @@ export default class TitleCssEditor extends Component {
   @tracked editing = false;
   @tracked cssValue = "";
   @tracked saving = false;
+  @tracked savedValue = "";
 
   constructor() {
     super(...arguments);
     const customFields = this.args.outletArgs?.user?.custom_fields;
-    this.cssValue = customFields?.title_css || "";
+    this.savedValue = customFields?.title_css || "";
+    this.cssValue = this.savedValue;
   }
 
   get canEdit() {
@@ -26,8 +28,7 @@ export default class TitleCssEditor extends Component {
   }
 
   get displayValue() {
-    const customFields = this.args.outletArgs?.user?.custom_fields;
-    return customFields?.title_css || "";
+    return this.savedValue;
   }
 
   @action
@@ -64,6 +65,9 @@ export default class TitleCssEditor extends Component {
         this.args.outletArgs.user.custom_fields = {};
       }
       this.args.outletArgs.user.custom_fields.title_css = result.title_css || "";
+
+      // Update our tracked property so UI updates
+      this.savedValue = result.title_css || "";
 
       this.editing = false;
 

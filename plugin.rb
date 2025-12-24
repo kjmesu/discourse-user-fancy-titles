@@ -33,51 +33,36 @@ module ::DiscourseUserFancyTitles
   def self.sanitize_css(css_string)
     return "" if css_string.blank?
 
-    Rails.logger.warn("=== CSS Sanitization Debug ===")
-    Rails.logger.warn("Input: #{css_string.inspect}")
-
     # Block dangerous patterns
     BLOCKED_PATTERNS.each do |pattern|
-      if css_string =~ pattern
-        Rails.logger.warn("Blocked by pattern: #{pattern}")
-        return ""
-      end
+      return "" if css_string =~ pattern
     end
 
     # Parse and filter CSS declarations
-    parts_array = css_string.split(";").map(&:strip).reject(&:blank?)
-    Rails.logger.warn("After split by semicolon: #{parts_array.inspect}")
+    css_string
+      .split(";")
+      .map(&:strip)
+      .reject(&:blank?)
+      .filter_map do |rule|
+        parts = rule.split(":", 2)
+        next if parts.length != 2
 
-    result = parts_array.filter_map do |rule|
-      parts = rule.split(":", 2)
-      Rails.logger.warn("Rule: #{rule.inspect}, Parts: #{parts.inspect}")
+        property = parts[0].strip
+        value = parts[1].strip
+        next if property.blank? || value.blank?
 
-      next if parts.length != 2
+        # Only allow allowlisted properties
+        next unless ALLOWED_CSS_PROPERTIES.include?(property.downcase)
 
-      property = parts[0].strip
-      value = parts[1].strip
-      Rails.logger.warn("Property: #{property.inspect}, Value: #{value.inspect}")
+        # Additional validation for font-size (must have valid unit)
+        if property.downcase == "font-size"
+          next unless value =~ /^\d+(\.\d+)?(px|em|rem|%)$/i
+        end
 
-      next if property.blank? || value.blank?
-
-      # Only allow allowlisted properties
-      unless ALLOWED_CSS_PROPERTIES.include?(property.downcase)
-        Rails.logger.warn("Property #{property} not in allowlist: #{ALLOWED_CSS_PROPERTIES.inspect}")
-        next
+        "#{property}: #{value}"
       end
-
-      # Additional validation for font-size (must have valid unit)
-      if property.downcase == "font-size"
-        next unless value =~ /^\d+(\.\d+)?(px|em|rem|%)$/i
-      end
-
-      output = "#{property}: #{value}"
-      Rails.logger.warn("Accepted: #{output.inspect}")
-      output
-    end.join("; ")
-
-    Rails.logger.warn("Final result: #{result.inspect}")
-    result.blank? ? "" : result
+      .join("; ")
+      .presence || ""
   end
 end
 
@@ -96,23 +81,20 @@ after_initialize do
 
   # Expose custom field to serializers
   add_to_serializer(:basic_user, :title_css) do
-    # Handle both User objects and Hash representations
-    if object.is_a?(Hash)
-      object.dig(:custom_fields, DiscourseUserFancyTitles::TITLE_CSS_FIELD) ||
-        object.dig("custom_fields", DiscourseUserFancyTitles::TITLE_CSS_FIELD)
-    else
-      object.custom_fields&.dig(DiscourseUserFancyTitles::TITLE_CSS_FIELD)
-    end
+    object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD)
   end
 
   add_to_serializer(:basic_user, :include_title_css?) do
-    value = if object.is_a?(Hash)
-              object.dig(:custom_fields, DiscourseUserFancyTitles::TITLE_CSS_FIELD) ||
-                object.dig("custom_fields", DiscourseUserFancyTitles::TITLE_CSS_FIELD)
-            else
-              object.custom_fields&.dig(DiscourseUserFancyTitles::TITLE_CSS_FIELD)
-            end
-    value.present?
+    object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD).present?
+  end
+
+  # Also add to admin serializer
+  add_to_serializer(:admin_detailed_user, :title_css) do
+    object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+  end
+
+  add_to_serializer(:admin_detailed_user, :include_title_css?) do
+    object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD).present?
   end
 
   # Add custom route
@@ -129,39 +111,22 @@ after_initialize do
     guardian.ensure_can_edit!(user)
 
     css_value = params[:title_css].to_s.strip
-    original_value = css_value.dup
-
-    Rails.logger.warn("=== Controller Debug ===")
-    Rails.logger.warn("User ID: #{user.id}")
-    Rails.logger.warn("Input CSS: #{css_value.inspect}")
-
     sanitized_css = DiscourseUserFancyTitles.sanitize_css(css_value)
-    Rails.logger.warn("Sanitized CSS: #{sanitized_css.inspect}")
-
-    Rails.logger.warn("Custom fields before: #{user.custom_fields.inspect}")
 
     if sanitized_css.present?
       user.custom_fields[DiscourseUserFancyTitles::TITLE_CSS_FIELD] = sanitized_css
-      Rails.logger.warn("Set custom field to: #{sanitized_css.inspect}")
     else
       user.custom_fields.delete(DiscourseUserFancyTitles::TITLE_CSS_FIELD)
-      Rails.logger.warn("Deleted custom field")
     end
 
-    Rails.logger.warn("Custom fields after assignment: #{user.custom_fields.inspect}")
-
-    save_result = user.save_custom_fields(true)
-    Rails.logger.warn("Save result: #{save_result.inspect}")
-
+    user.save_custom_fields(true)
     user.reload
-    Rails.logger.warn("Custom fields after reload: #{user.custom_fields.inspect}")
 
     actual_saved = user.custom_fields[DiscourseUserFancyTitles::TITLE_CSS_FIELD]
-    Rails.logger.warn("Actual saved value: #{actual_saved.inspect}")
 
     render json: success_json.merge(
              title_css: actual_saved.presence || "",
-             sanitized: sanitized_css != original_value,
+             sanitized: sanitized_css != css_value,
            )
   end
 end
