@@ -3,7 +3,10 @@ export default {
 
   initialize(container) {
     const siteSettings = container.lookup("service:site-settings");
-    const titlePosition = siteSettings.title_position;
+    if (!siteSettings.discourse_user_fancy_titles_enabled) {
+      return;
+    }
+    const titlePosition = siteSettings.title_position || "default";
     document.documentElement.classList.add(`title-position-${titlePosition}`);
   },
 };
