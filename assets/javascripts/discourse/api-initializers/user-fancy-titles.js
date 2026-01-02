@@ -8,25 +8,22 @@ export default apiInitializer("1.14.0", (api) => {
   const titleStylesCache = new Map();
 
   function updateTitleStyles(posts) {
-    if (!posts || posts.length === 0) {
+    if (!posts?.length) {
       return;
     }
 
     let hasChanges = false;
 
     posts.forEach((post) => {
-      const titleCss = post.user_title_css;
-      const userTitle = post.user_title;
-
-      if (titleCss && userTitle) {
-        const className = slugify(userTitle);
+      if (post.user_title_css && post.user_title) {
+        const className = slugify(post.user_title);
 
         if (!titleStylesCache.has(className)) {
           if (titleStylesCache.size >= MAX_CACHE_SIZE) {
             titleStylesCache.clear();
             hasChanges = true;
           }
-          titleStylesCache.set(className, titleCss);
+          titleStylesCache.set(className, post.user_title_css);
           hasChanges = true;
         }
       }
@@ -46,11 +43,9 @@ export default apiInitializer("1.14.0", (api) => {
       document.head.appendChild(styleElement);
     }
 
-    const cssRules = Array.from(titleStylesCache.entries()).map(
-      ([className, css]) => `.user-title--${className} { ${css} }`
-    );
-
-    styleElement.textContent = cssRules.join("\n");
+    styleElement.textContent = Array.from(titleStylesCache.entries())
+      .map(([className, css]) => `.user-title--${className} { ${css} }`)
+      .join("\n");
   }
 
   api.onAppEvent("page:topic-loaded", (topic) => {
