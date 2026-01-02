@@ -8,6 +8,8 @@
 
 enabled_site_setting :discourse_user_fancy_titles_enabled
 
+register_asset "stylesheets/user-fancy-titles.scss"
+
 module ::DiscourseUserFancyTitles
   PLUGIN_NAME = "discourse-user-fancy-titles"
   TITLE_CSS_FIELD = "title_css"
