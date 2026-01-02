@@ -25,3 +25,62 @@
     margin: 0;
   }
 }
+
+.names.trigger-user-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5em;
+
+  > .first {
+    order: 1;
+  }
+
+  > .second {
+    order: 10;
+  }
+
+  > .user-title {
+    font-size: var(--font-down-2-rem);
+    display: inline-flex;
+    align-items: center;
+
+    a {
+      color: inherit;
+      background: none;
+    }
+  }
+
+  > .user-status-message-wrap {
+    order: 30;
+  }
+
+  > .user-badge-buttons {
+    order: 40;
+  }
+
+  > .poster-name-icons {
+    order: 0;
+
+    @media (min-width: 768px) {
+      order: 50;
+    }
+  }
+}
+
+html.title-position-after_username .names.trigger-user-card > .user-title {
+  order: 15;
+}
+
+html.title-position-below_username .names.trigger-user-card {
+  row-gap: 0.1em;
+
+  > .user-title {
+    order: 15;
+    flex-basis: 100%;
+  }
+}
+
+.topic-meta-data {
+  align-items: baseline;
+}

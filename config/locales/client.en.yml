@@ -6,3 +6,5 @@ en:
       no_custom_css: "(none)"
       css_was_sanitized: "Some CSS properties were removed for security reasons."
       allowed_properties: "Allowed properties: color, font-weight, font-style, text-decoration, text-transform, text-shadow, font-size"
+  site_settings:
+    title_position: "Control where the user title appears in the post metadata. 'default' uses the standard position, 'after_username' places it immediately after the username on the same line, 'below_username' places it on a new line below the username."

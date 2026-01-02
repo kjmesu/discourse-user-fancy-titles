@@ -1,0 +1,12 @@
+plugins:
+  discourse_user_fancy_titles_enabled:
+    default: true
+    client: true
+  title_position:
+    type: enum
+    default: default
+    choices:
+      - default
+      - after_username
+      - below_username
+    client: true

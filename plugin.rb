@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
 # name: discourse-user-fancy-titles
-# about: Allows staff to add custom CSS styling to user titles
-# version: 2.0.0
+# about: Allows staff to add custom CSS styling to user titles and control their position
+# version: 2.1.0
 # authors: GAFSHUB
 # url: https://github.com/gafshub/discourse-user-fancy-titles
+
+enabled_site_setting :discourse_user_fancy_titles_enabled
 
 module ::DiscourseUserFancyTitles
   PLUGIN_NAME = "discourse-user-fancy-titles"
