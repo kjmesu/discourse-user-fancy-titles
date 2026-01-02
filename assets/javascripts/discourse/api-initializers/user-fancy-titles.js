@@ -4,9 +4,6 @@ import { slugify } from "discourse/lib/utilities";
 const MAX_CACHE_SIZE = 1000;
 
 export default apiInitializer("1.14.0", (api) => {
-  const titlePosition = settings.title_position;
-  document.documentElement.classList.add(`title-position-${titlePosition}`);
-
   let styleElement = null;
   const titleStylesCache = new Map();
 
