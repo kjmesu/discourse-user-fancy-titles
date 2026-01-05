@@ -77,15 +77,11 @@ after_initialize do
   allow_staff_user_custom_field(DiscourseUserFancyTitles::TITLE_CSS_FIELD)
   allow_public_user_custom_field(DiscourseUserFancyTitles::TITLE_CSS_FIELD)
 
-  add_to_serializer(:post, :user_title_css) do
+  add_to_serializer(:post, :user_title_css, include_condition: -> { user_title_css.present? }) do
     user_custom_fields_object[object.user_id]&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD)
   end
 
-  add_to_serializer(:post, :include_user_title_css?) do
-    user_title_css.present?
-  end
-
-  add_to_serializer(:basic_user, :title_css) do
+  add_to_serializer(:basic_user, :title_css, include_condition: -> { title_css.present? }) do
     if object.is_a?(Hash)
       object.dig(:custom_fields, DiscourseUserFancyTitles::TITLE_CSS_FIELD) ||
         object.dig("custom_fields", DiscourseUserFancyTitles::TITLE_CSS_FIELD)
@@ -94,16 +90,12 @@ after_initialize do
     end
   end
 
-  add_to_serializer(:basic_user, :include_title_css?) do
-    title_css.present?
-  end
-
-  add_to_serializer(:admin_detailed_user, :title_css) do
+  add_to_serializer(
+    :admin_detailed_user,
+    :title_css,
+    include_condition: -> { object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD).present? },
+  ) do
     object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD)
-  end
-
-  add_to_serializer(:admin_detailed_user, :include_title_css?) do
-    object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD).present?
   end
 
   Discourse::Application.routes.append do
