@@ -82,11 +82,11 @@ after_initialize do
   end
 
   add_to_serializer(:basic_user, :title_css, include_condition: -> { title_css.present? }) do
-    if object.is_a?(Hash)
+    if object.is_a?(Hash) && !object.key?(:user)
       object.dig(:custom_fields, DiscourseUserFancyTitles::TITLE_CSS_FIELD) ||
         object.dig("custom_fields", DiscourseUserFancyTitles::TITLE_CSS_FIELD)
     else
-      object.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD)
+      user.custom_fields&.[](DiscourseUserFancyTitles::TITLE_CSS_FIELD)
     end
   end
 
